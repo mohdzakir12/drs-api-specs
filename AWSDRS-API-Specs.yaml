@@ -1,0 +1,527 @@
+openapi: 3.0.3
+info:
+  title: AWS Elastic Disaster Recovery API
+  description: |
+    AWS Elastic Disaster Recovery (AWS DRS) facilitates seamless FailOver and FailBack processes for applications, ensuring minimal downtime and data loss. The solution employs cost-effective storage, minimal compute resources, and point-in-time recovery.
+  version: 1.0.0
+servers:
+  - url: https://example.com/api/v1  # Update with your actual API URL
+
+paths:
+  /create-iam-role:
+    post:
+      summary: Create IAM Role with Policy
+      description: Creates a new IAM role with the AWSElasticDisasterRecoveryAgentInstallationPolicy.
+      operationId: createIAMRole
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIAMRoleRequest'
+      responses:
+        '200':
+          description: IAM Role created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateIAMRoleResponse'
+        '500':
+          description: Internal Server Error
+
+  /request-temporary-credentials:
+    post:
+      summary: Request Temporary Credentials
+      description: Requests temporary security credentials via AWS STS using AssumeRole API.
+      operationId: requestTemporaryCredentials
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestTemporaryCredentialsRequest'
+      responses:
+        '200':
+          description: Temporary credentials obtained successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestTemporaryCredentialsResponse'
+        '500':
+          description: Internal Server Error
+
+  /add-iam-role-to-instance:
+    post:
+      summary: Add IAM Role to Linux Instance
+      description: Adds the newly created IAM role to the respective Linux instance.
+      operationId: addIAMRoleToInstance
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddIAMRoleToInstanceRequest'
+      responses:
+        '200':
+          description: IAM Role added to instance successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AddIAMRoleToInstanceResponse'
+        '500':
+          description: Internal Server Error
+
+  /open-ports-for-failover:
+    post:
+      summary: Open Ports for Failover
+      description: Opens ports 443, 22, and 1500 for failover.
+      operationId: openPortsForFailover
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenPortsForFailoverRequest'
+      responses:
+        '200':
+          description: Ports opened successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OpenPortsForFailoverResponse'
+        '500':
+          description: Internal Server Error
+
+  /install-agent-on-linux:
+    post:
+      summary: Install AWS Elastic Disaster Recovery Agent on Linux Source Server
+      description: Installs the AWS Elastic Disaster Recovery agent on a Linux source server.
+      operationId: installAgentOnLinux
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InstallAgentOnLinuxRequest'
+      responses:
+        '200':
+          description: Agent installation on Linux source server successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InstallAgentOnLinuxResponse'
+        '500':
+          description: Internal Server Error
+
+  /source-servers/{serverId}/data-replication-info:
+    get:
+      summary: Get Data Replication Info
+      description: Get data replication information for a specific source server
+      operationId: getDataReplicationInfo
+      parameters:
+        - name: serverId
+          in: path
+          description: ID of the source server
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataReplicationInfo'
+        '404':
+          description: Source server not found
+        '500':
+          description: Internal Server Error
+
+  /source-servers/{serverId}/data-replication-initiation-steps:
+    get:
+      summary: Get Data Replication Initiation Steps
+      description: Get the steps for data replication initiation for a specific source server
+      operationId: getDataReplicationInitiationSteps
+      parameters:
+        - name: serverId
+          in: path
+          description: ID of the source server
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ReplicationInitiationStep'
+        '404':
+          description: Source server not found
+        '500':
+          description: Internal Server Error
+
+  /source-servers:
+    get:
+      summary: List Source Servers
+      description: Get a list of source servers for disaster recovery
+      operationId: listSourceServers
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SourceServer'
+        '500':
+          description: Internal Server Error
+
+  /data-replication-state:
+    get:
+      summary: Get Data Replication State
+      description: Get the current data replication state for disaster recovery
+      operationId: getDataReplicationState
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DataReplicationState'
+        '500':
+          description: Internal Server Error
+
+  /source-servers/{serverId}/ready-for-recovery:
+    post:
+      summary: Mark Source Server as Ready for Recovery
+      description: Marks a specific source server as "Ready for Recovery" to initiate the failover process.
+      operationId: markSourceServerReadyForRecovery
+      parameters:
+        - name: serverId
+          in: path
+          description: ID of the source server
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MarkSourceServerReadyForRecoveryRequest'
+      responses:
+        '200':
+          description: Source server marked as "Ready for Recovery" successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MarkSourceServerReadyForRecoveryResponse'
+        '404':
+          description: Source server not found
+        '500':
+          description: Internal Server Error
+
+  /initiate-recovery-drill:
+    post:
+      summary: Initiate Recovery Drill
+      description: Initiates a recovery drill for disaster recovery testing.
+      operationId: initiateRecoveryDrill
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitiateRecoveryDrillRequest'
+      responses:
+        '200':
+          description: Recovery drill initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitiateRecoveryDrillResponse'
+        '500':
+          description: Internal Server Error
+
+  /initiate-recovery:
+    post:
+      summary: Initiate Recovery
+      description: Initiates the actual recovery process for disaster recovery.
+      operationId: initiateRecovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InitiateRecoveryRequest'
+      responses:
+        '200':
+          description: Recovery initiated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InitiateRecoveryResponse'
+        '500':
+          description: Internal Server Error
+
+  /select-point-in-time:  # Fix: Added a forward slash
+    post:
+      summary: Select Point-in-Time for Recovery
+      description: |
+        Allows the user to select a point in time for an ongoing recovery process.
+      operationId: selectPointInTimeForRecovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SelectPointInTimeRequest'
+      responses:
+        '200':
+          description: Point-in-time selected successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SelectPointInTimeResponse'
+        '500':
+          description: Internal Server Error
+          
+  /last-recovery-result:
+    get:
+      summary: Get Last Recovery Result
+      description: Retrieves the result of the last recovery process.
+      operationId: getLastRecoveryResult
+      responses:
+        '200':
+          description: Successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LastRecoveryResult'
+        '500':
+          description: Internal Server Error
+
+components:
+  schemas:
+    CreateIAMRoleRequest:
+      type: object
+      properties:
+        roleName:
+          type: string
+        policyName:
+          type: string
+      required:
+        - roleName
+        - policyName
+
+    CreateIAMRoleResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+
+    RequestTemporaryCredentialsRequest:
+      type: object
+      properties:
+        roleArn:
+          type: string
+      required:
+        - roleArn
+
+    RequestTemporaryCredentialsResponse:
+      type: object
+      properties:
+        accessKey:
+          type: string
+        secretKey:
+          type: string
+        sessionToken:
+          type: string
+
+    AddIAMRoleToInstanceRequest:
+      type: object
+      properties:
+        roleName:
+          type: string
+        instanceId:
+          type: string
+      required:
+        - roleName
+        - instanceId
+
+    AddIAMRoleToInstanceResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+
+    OpenPortsForFailoverRequest:
+      type: object
+      properties:
+        ports:
+          type: array
+          items:
+            type: integer
+      required:
+        - ports
+
+    OpenPortsForFailoverResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+
+    InstallAgentOnLinuxRequest:
+      type: object
+      properties:
+        serverIp:
+          type: string
+        agentVersion:
+          type: string
+      required:
+        - serverIp
+        - agentVersion
+
+    InstallAgentOnLinuxResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+
+    DataReplicationInfo:
+      type: object
+      properties:
+        replicationStatus:
+          type: string
+        lastReplicationTime:
+          type: string
+
+    ReplicationInitiationStep:
+      type: object
+      properties:
+        stepId:
+          type: string
+        stepDescription:
+          type: string
+          
+    SourceServer:
+      type: object
+      properties:
+        serverId:
+          type: string
+        serverName:
+          type: string
+          
+    DataReplicationState:
+      type: object
+      properties:
+        replicationStatus:
+          type: string
+        lastReplicationTime:
+          type: string
+        replicationProgress:
+          type: integer
+      required:
+        - replicationStatus
+        - lastReplicationTime
+        - replicationProgress      
+
+    MarkSourceServerReadyForRecoveryRequest:
+      type: object
+      properties:
+        recoveryOption:
+          type: string
+      required:
+        - recoveryOption
+
+    MarkSourceServerReadyForRecoveryResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+          
+    InitiateRecoveryDrillRequest:
+      type: object
+      properties:
+        drillId:
+          type: string
+        drillOptions:
+          type: array
+          items:
+            type: string
+      required:
+        - drillId
+        - drillOptions
+
+    InitiateRecoveryDrillResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+
+    InitiateRecoveryRequest:
+      type: object
+      properties:
+        recoveryId:
+          type: string
+        recoveryOptions:
+          type: array
+          items:
+            type: string
+      required:
+        - recoveryId
+        - recoveryOptions
+
+    InitiateRecoveryResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+          
+    SelectPointInTimeRequest:
+      type: object
+      properties:
+        recoveryId:
+          type: string
+        selectedPointInTime:
+          type: string  # You might want to use a specific date/time format here
+      required:
+        - recoveryId
+        - selectedPointInTime
+
+    SelectPointInTimeResponse:
+      type: object
+      properties:
+        status:
+          type: string
+        message:
+          type: string
+          
+    LastRecoveryResult:
+      type: object
+      properties:
+        recoveryId:
+          type: string
+        result:
+          type: string  # You might want to define specific result types
+        startTime:
+          type: string  # Use your specific date/time format here
+        endTime:
+          type: string  # Use your specific date/time format here
